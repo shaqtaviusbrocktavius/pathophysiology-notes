@@ -156,7 +156,9 @@ html[data-theme="dark"]{--soft-yellow:rgba(255,221,106,.20);--soft-blue:rgba(103
 .notesDock.stickyMinimized .stickyNoteLaunch:hover,.notesDock.stickyMinimized .stickyNoteLaunch:focus-visible{transform:rotate(0deg) scale(1.08);box-shadow:0 9px 22px #0004;outline:2px solid #e5bd53;outline-offset:3px}
 .stickyNoteLaunch .stickyNotePin{position:absolute;top:-15px;left:22px;font-size:25px;filter:drop-shadow(0 2px 2px #0003);line-height:1}
 .stickyNoteLaunch .stickyNoteLines{font-weight:800;font-size:20px;letter-spacing:3px;line-height:1.1;opacity:.8;transform:translateY(3px)}
-@media(max-width:1150px){.notesDock.stickyMinimized{position:fixed!important;right:18px!important;bottom:18px!important;top:auto!important;left:auto!important;margin:0!important}}
+@media(max-width:1150px){.notesDock.stickyMinimized:not(.stickyIconMoved){position:fixed!important;right:18px!important;bottom:18px!important;top:auto!important;left:auto!important;margin:0!important}}
+.notesDock.stickyMinimized.stickyIconMoved{position:fixed!important;right:auto!important;bottom:auto!important;margin:0!important}
+.notesDock.stickyMinimized .stickyNoteLaunch{touch-action:none;user-select:none}
 @media print{.stickyNoteLaunch{display:none!important}}
 </style><style id="compact-annotation-toolbar">
 #persistentHighlightBar{gap:6px!important;padding:8px 11px!important}
@@ -341,6 +343,55 @@ setupExactTargets();applyHighlights();qs.forEach(([question,answer,explanation],
  // The notes panel height can change when shown or hidden; keep it in view.
  const observer=new ResizeObserver(()=>{if(desktop()&&dock.style.left){const r=dock.getBoundingClientRect();place(r.left,r.top)}});
  observer.observe(dock);
- restore();
+ const sticky=document.getElementById('stickyNoteLaunch');
+ const miniKey='ch24_sticky_icon_position_v1';
+ let miniDrag=null, suppressMiniClick=false;
+ function restoreMini(){
+   if(!dock.classList.contains('stickyMinimized'))return;
+   try{
+     const p=JSON.parse(localStorage.getItem(miniKey));
+     if(p&&Number.isFinite(p.x)&&Number.isFinite(p.y)){
+       dock.classList.add('stickyIconMoved');place(p.x,p.y);return;
+     }
+   }catch(e){}
+   dock.classList.remove('stickyIconMoved');
+   dock.style.left='';dock.style.top='';dock.style.right='';dock.style.bottom='';
+ }
+ function restoreMode(){
+   if(dock.classList.contains('stickyMinimized'))restoreMini();
+   else{dock.classList.remove('stickyIconMoved');restore()}
+ }
+ if(sticky){
+   sticky.addEventListener('pointerdown',e=>{
+     if(e.button!==0||!dock.classList.contains('stickyMinimized'))return;
+     const r=dock.getBoundingClientRect();
+     miniDrag={id:e.pointerId,startX:e.clientX,startY:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,moved:false};
+     sticky.setPointerCapture(e.pointerId);
+   });
+   sticky.addEventListener('pointermove',e=>{
+     if(!miniDrag||miniDrag.id!==e.pointerId)return;
+     if(Math.hypot(e.clientX-miniDrag.startX,e.clientY-miniDrag.startY)>5)miniDrag.moved=true;
+     if(!miniDrag.moved)return;
+     dock.classList.add('stickyIconMoved');place(e.clientX-miniDrag.dx,e.clientY-miniDrag.dy);
+   });
+   function endMini(e){
+     if(!miniDrag||miniDrag.id!==e.pointerId)return;
+     if(miniDrag.moved){
+       suppressMiniClick=true;
+       const r=dock.getBoundingClientRect();
+       try{localStorage.setItem(miniKey,JSON.stringify({x:r.left,y:r.top}))}catch(err){}
+     }
+     miniDrag=null;
+   }
+   sticky.addEventListener('pointerup',endMini);
+   sticky.addEventListener('pointercancel',endMini);
+   sticky.addEventListener('click',e=>{
+     if(suppressMiniClick){e.preventDefault();e.stopImmediatePropagation();suppressMiniClick=false;}
+   },true);
+ }
+ const miniObserver=new MutationObserver(restoreMode);
+ miniObserver.observe(dock,{attributes:true,attributeFilter:['class']});
+ window.addEventListener('resize',restoreMode);
+ restoreMode();
 })();
 </script><script id="focus-soft-notes-script">(function(){const btn=document.getElementById('focusToggle'),key='ch24_focus_mode_v1';if(!btn)return;function set(v){document.body.classList.toggle('focusMode',v);btn.setAttribute('aria-pressed',String(v));btn.textContent=v?'☰ Show pages':'☰ Hide pages · Focus mode';try{localStorage.setItem(key,v?'1':'0')}catch(e){}}btn.addEventListener('click',()=>set(!document.body.classList.contains('focusMode')));let on=false;try{on=localStorage.getItem(key)==='1'}catch(e){}set(on)})();</script></body></html>
