@@ -1052,4 +1052,156 @@ for(const id of ['hyperSim','edemaSim','balanceSim','edemaFiveSim','shiftSim','k
  }
 }
 })();
-</script><script id="focus-soft-notes-script">(function(){const btn=document.getElementById('focusToggle'),key='ch24_focus_mode_v1';if(!btn)return;function set(v){document.body.classList.toggle('focusMode',v);btn.setAttribute('aria-pressed',String(v));btn.textContent=v?'☰ Show pages':'☰ Hide pages · Focus mode';try{localStorage.setItem(key,v?'1':'0')}catch(e){}}btn.addEventListener('click',()=>set(!document.body.classList.contains('focusMode')));let on=false;try{on=localStorage.getItem(key)==='1'}catch(e){}set(on)})();</script></body></html>
+</script><script id="ch24-final-chapter-labs">(function finalLabsEngine(){
+'use strict';
+const esc=v=>String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+const text=(x,y,t,size=14)=>'<text x="'+x+'" y="'+y+'" font-family="Arial" font-size="'+size+'" fill="#275373">'+esc(t)+'</text>';
+const rect=(x,y,w,h,color='#e6f3fc')=>'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="12" fill="'+color+'" stroke="#89adc3" stroke-width="2"/>';
+const line=(x,y,xx,yy,col='#488aaf')=>'<path d="M'+x+' '+y+' L'+xx+' '+yy+'" fill="none" stroke="'+col+'" stroke-width="4"/>';
+const motion=(path,n,color='#2f8dcc')=>Array.from({length:n},(_,i)=>'<circle r="6" fill="'+color+'"><animateMotion path="'+path+'" dur="2.4s" repeatCount="indefinite" begin="-'+(i*2.4/n).toFixed(1)+'s"/></circle>').join('');
+const canvas=(inner,title)=>'<svg viewBox="0 0 620 300" role="img" aria-label="'+esc(title)+'">'+rect(0,0,620,300,'#f8fcff')+inner+'</svg>';
+function calcium(mode){
+ const th=mode==='low'?177:mode==='high'?102:135;
+ const fired=mode==='low';
+ const pic=text(20,27,'CALCIUM AND THE FIRING THRESHOLD',17)+text(36,63,'Same small depolarizing stimulus',13)+
+ line(65,218,365,218,'#4b7793')+text(70,245,'Resting voltage',12)+
+ '<path d="M68 '+th+' H361" stroke="#d28b35" stroke-width="3" stroke-dasharray="8 5"/>'+text(76,th-8,'Threshold',13)+
+ '<path d="M80 218 L154 218 L215 153 L253 218 L347 218" stroke="#2688be" stroke-width="4" fill="none"/>'+
+ rect(390,72,207,171,'#e1eff8')+text(405,99,'Neuron / axon',15)+
+ '<circle cx="442" cy="165" r="30" fill="#b9dbef" stroke="#387eb1" stroke-width="3"/>'+line(472,165,565,165)+
+ (fired?motion('M473 165 L566 165',3,'#df8b30'):'')+
+ text(398,221,fired?'Action potential!':'No spike',15)+
+ text(34,280,mode==='low'?'Low ionized calcium: firing threshold decreases':mode==='high'?'High calcium: firing threshold increases':'Normal calcium: threshold maintained',14);
+ return [canvas(pic,'Calcium changes excitation threshold relative to resting membrane potential'),
+ mode==='low'?'Lower ionized Ca²⁺ moves the activation threshold toward resting potential; this small stimulus now produces firing, explaining tetany and hyperreflexia.':mode==='high'?'Higher ionized Ca²⁺ raises the activation threshold. The same stimulus is less effective, explaining depressed reflexes and weakness.':'A small stimulus that does not reach the normal threshold cannot fire this neuron. More powerful stimulation can still produce an action potential.'];
+}
+function magnesium(mode){
+ const count=mode==='low'?12:mode==='high'?2:6;
+ let ach='';
+ for(let i=0;i<count;i++){
+   let x=63+(i%8)*32;
+   ach+='<circle cx="'+x+'" cy="147" r="6" fill="#d99c3c"><animate attributeName="cy" values="140;199;140" dur="2.2s" repeatCount="indefinite" begin="-'+(i*.21).toFixed(2)+'s"/></circle>';
+ }
+ const pic=text(18,26,'MOTOR NEURON → ACh RELEASE → MUSCLE RESPONSE',16)+
+ rect(30,47,326,87,'#b7d9ef')+text(43,71,'Presynaptic motor axon terminal',13)+
+ Array.from({length:10},(_,i)=>'<circle cx="'+(57+i*27)+'" cy="108" r="9" fill="#91b9d6" stroke="#4387ab" stroke-width="2"/>').join('')+
+ text(376,88,'Mg²⁺ normally limits',13)+text(376,107,'presynaptic ACh release',13)+
+ text(40,174,'Synaptic cleft',13)+ach+
+ line(30,219,355,219,'#587d95')+
+ Array.from({length:7},(_,i)=>rect(55+i*43,224,15,19,'#67a7ca')).join('')+
+ rect(31,251,325,18,'#e9b1b4')+text(374,190,mode==='low'?'ACh release HIGH':mode==='high'?'ACh release LOW':'Controlled ACh release',15)+
+ text(374,224,mode==='low'?'Twitch / hyperreflexia':mode==='high'?'Weak reflexes / paralysis':'Normal end-plate response',13);
+ return [canvas(pic,'Magnesium alters acetylcholine release at the neuromuscular junction'),
+ mode==='low'?'Low Mg²⁺ means less inhibition of ACh release: more transmitter reaches the muscle end plate, increasing neuromuscular excitability.':mode==='high'?'High Mg²⁺ suppresses ACh release, weakening muscle activation, reflexes and potentially respiratory function.':'At normal Mg²⁺, release of ACh is appropriately restrained and skeletal muscle activation is regulated.'];
+}
+function phosphateEnergy(mode){
+ const low=mode!=='normal',feed=mode==='refeed';
+ const pi=low?3:8,atp=low?(feed?44:33):92,bpg=low?39:90;
+ const bar=(y,w,col)=>rect(393,y,170,18,'#e6e5dd')+rect(395,y+2,w*1.65,14,col);
+ const pic=text(21,25,'PHOSPHATE ENABLES ATP AND RBC 2,3-BPG',16)+
+ rect(20,55,187,157,'#d7eefb')+text(32,83,'Blood phosphate pool',14)+
+ Array.from({length:pi},(_,i)=>'<circle cx="'+(49+i%4*36)+'" cy="'+(117+Math.floor(i/4)*34)+'" r="9" fill="#d9a044"/>').join('')+
+ line(208,130,274,130,'#3992b8')+(feed?motion('M208 130 L272 130',4,'#d69c3b'):'')+
+ rect(279,55,316,157,'#e1f0f7')+text(292,82,'Cell and erythrocyte',14)+
+ text(291,112,'ATP',14)+bar(97,atp,'#65b77d')+
+ text(291,160,'2,3-BPG',14)+bar(146,bpg,'#4e9bcf')+
+ text(26,251,feed?'Refeeding + insulin shift phosphate into cells':low?'Low phosphate compromises energy and oxygen unloading':'Adequate phosphate supports cell and red-cell function',14)+
+ text(24,282,low?'Diaphragm, heart, red cells and brain may suffer':'ATP = usable energy • RBC 2,3-BPG helps tissue O₂ release',13);
+ return [canvas(pic,'Phosphate availability determines ATP and erythrocyte 2,3-BPG supply'),
+ feed?'With refeeding, insulin-driven cellular uptake can suddenly reduce plasma phosphate in someone with depleted stores. ATP generation, diaphragm strength and red-cell oxygen release can be threatened.':low?'Insufficient phosphate reduces ATP-dependent cell function and may reduce red-cell 2,3-BPG; weakness, hemolysis, impaired oxygen delivery and respiratory failure are possible.':'Normal phosphate supply sustains ATP-dependent tissue function and erythrocyte 2,3-BPG needed for oxygen unloading.'];
+}
+function phosphateCalcium(mode){
+ const high=mode!=='normal',CKD=mode==='ckd';
+ const pic=text(16,28,'HIGH PHOSPHATE CAN LOWER FREE Ca²⁺',16)+
+ rect(17,52,267,188,'#d8ecf8')+text(30,76,'Extracellular fluid',15)+
+ Array.from({length:high?10:5},(_,i)=>'<circle cx="'+(55+i%5*41)+'" cy="'+(112+Math.floor(i/5)*34)+'" r="9" fill="#d7a046"/>').join('')+
+ text(32,214,high?'Phosphate high':'Phosphate balanced',14)+
+ rect(312,52,282,188,'#e9f2f8')+text(324,76,'Kidney',15)+
+ '<path d="M330 116 Q376 77 410 130 T493 117" fill="none" stroke="#397fa7" stroke-width="9"/>'+
+ line(494,119,559,190,'#397fa7')+
+ (CKD?'<path d="M468 99 L504 141 M504 99 L468 141" stroke="#c34b55" stroke-width="6"/>':motion('M497 125 L555 188',high?2:4,'#d49d42'))+
+ text(329,215,CKD?'Excretion ↓':mode==='lysis'?'Rapid Pi release from cells':'Excretion balances load',13)+
+ text(18,266,high?'Pi binds calcium → ionized Ca²⁺ falls; crystals can form':'Free calcium remains more available',14);
+ return [canvas(pic,'Kidney phosphate elimination and phosphate calcium interaction'),
+ CKD?'Renal phosphate excretion falls with impaired kidney function, increasing plasma phosphate and promoting hypocalcemia and possible calcium-phosphate deposition.':mode==='lysis'?'Tumor lysis or crush injury releases intracellular phosphate into blood. The phosphate load can bind calcium and provoke hypocalcemic excitability.':'Normally the kidney can balance dietary phosphate absorption and maintain plasma phosphate so free calcium is preserved.'];
+}
+function aging(mode){
+ const infant=mode==='infant',older=mode==='older';
+ const frac=infant?75:older?48:60;
+ const h=frac*1.95;
+ const pic=text(18,26,'AGE CHANGES FLUID BALANCE MECHANISMS',16)+
+ rect(30,54,191,207,'#e6f0f6')+text(45,85,infant?'INFANT':older?'OLDER ADULT':'ADULT',17)+
+ rect(83,101,85,149,'#e2e4e6')+rect(85,249-h,81,h,'#63b8dc')+
+ text(81,281,infant?'~75% water':older?'~45–50% water':'~60% water',14)+
+ rect(247,54,348,207,'#e6f2f8')+
+ text(263,91,infant?'HIGH WATER TURNOVER':older?'THIRST AND RENAL RESERVE DECLINE':'MATURE REGULATION',16)+
+ text(263,125,infant?'High skin / lung insensible loss':older?'Reduced thirst response':'Normal thirst responses',14)+
+ text(263,158,infant?'Kidneys cannot fully concentrate urine':older?'Less effective urine concentration':'Renal dilution and concentration work',14)+
+ text(263,192,infant?'Caregiver-dependent intake':older?'Water access can be limited':'Can replace losses appropriately',14)+
+ text(263,239,infant?'High risk during diarrhea':older?'High risk of dehydration':'Risk still depends on losses',13);
+ return [canvas(pic,'Life stage changes body water fraction, renal concentration and thirst vulnerability'),
+ infant?'Infants have a large proportion of water but rapid turnover, high insensible losses, limited urine concentrating and diluting ability and dependence on caregivers.':older?'Many older adults have lower body-water percentages, less thirst and impaired renal water conservation, increasing clinical dehydration and hypernatremia risk.':'A healthy adult usually has mature mechanisms for thirst, urine concentration and renal excretion, although severe illness can still overwhelm them.'];
+}
+const findings={
+ecvlow:['ECV DEFICIT','Reduced venous return and tissue perfusion',['Heart','Brain','Kidney','Vessels'],'Tachycardia, orthostatic dizziness, flat neck veins and oliguria.'],
+ecvhigh:['ECV EXCESS','Venous congestion and tissue filtration',['Heart','Lungs','Tissues','Vessels'],'Edema, crackles, jugular venous distension, orthopnea.'],
+nalow:['LOW SODIUM','Hypotonic ECF causes cerebral cell swelling',['Brain'],'Headache, nausea, confusion, seizures.'],
+nahigh:['HIGH SODIUM','Hypertonic ECF draws water from brain cells',['Brain','Kidney'],'Thirst, confusion, neurological dysfunction.'],
+klow:['LOW POTASSIUM','Membrane hyperpolarization and altered conduction',['Heart','Muscle','Gut','Kidney'],'Weakness, ileus, dysrhythmia, sometimes polyuria.'],
+khigh:['HIGH POTASSIUM','Membrane depolarization and sodium-channel inactivation',['Heart','Muscle','Gut'],'Muscle weakness, arrhythmia, possible arrest.'],
+calow:['LOW CALCIUM','Lower nerve-firing threshold',['Brain','Muscle','Heart'],'Tetany, paresthesias, seizures, dysrhythmia.'],
+cahigh:['HIGH CALCIUM','Higher nerve-firing threshold',['Brain','Muscle','Kidney','Gut'],'Low reflexes, confusion, constipation, polyuria.'],
+mglow:['LOW MAGNESIUM','Less ACh suppression at NMJ',['Muscle','Brain','Heart'],'Twitching, hyperreflexia, seizures, dysrhythmia.'],
+mghigh:['HIGH MAGNESIUM','Reduced ACh release at NMJ',['Muscle','Lungs','Heart','Vessels'],'Hyporeflexia, bradycardia, respiratory depression.'],
+plow:['LOW PHOSPHATE','Reduced ATP and red-cell 2,3-BPG',['Muscle','Lungs','Heart','Brain'],'Weak diaphragm, weakness, heart failure, seizures.'],
+phigh:['HIGH PHOSPHATE','Lower free Ca²⁺ and precipitation',['Muscle','Brain','Tissues'],'Tetany or calcium-phosphate deposition.']
+};
+function clinical(mode){
+ const d=findings[mode]||findings.ecvlow;
+ const entries=[['Brain',330,60],['Heart',463,60],['Lungs',330,124],['Vessels',463,124],['Muscle',330,188],['Kidney',463,188],['Gut',330,252],['Tissues',463,252]];
+ let pic=text(16,25,'PHYSIOLOGY → TISSUE DYSFUNCTION',16)+
+ rect(14,48,286,228,'#dceefa')+text(29,79,d[0],17)+
+ '<foreignObject x="29" y="102" width="254" height="129"><div xmlns="http://www.w3.org/1999/xhtml" style="font:14px/1.5 Arial;color:#315675">'+esc(d[1])+'</div></foreignObject>';
+ for(const [name,x,y] of entries)pic+=rect(x,y-21,122,40,d[2].includes(name)?'#f9d8aa':'#e4eef5')+text(x+12,y+4,name,14);
+ return [canvas(pic,'Clinical mechanism highlighting affected organ systems'),d[0]+': '+d[1]+'. Typical findings: '+d[3]];
+}
+function recap(mode){
+ const steps={
+ sodium:['Water/Na ratio','ECF tonicity','Osmotic water shift','Brain cell volume'],
+ potassium:['ECF K⁺','Resting potential','Excitability / conduction','Weakness / rhythm'],
+ calcium:['Ionized Ca²⁺','Voltage threshold','Neuron firing','Tetany / reflexes'],
+ magnesium:['ECF Mg²⁺','ACh release at NMJ','End-plate activity','Reflexes / breathing'],
+ phosphate:['Pi availability','ATP / free Ca²⁺','Cell function / excitability','Weakness / tetany']
+ }[mode]||['Serum concentration','Physical gradient','Cell response','Clinical effect'];
+ let pic=text(25,28,'FOLLOW THE CAUSAL CHAIN',17);
+ for(let i=0;i<steps.length;i++){
+ const x=15+i*152;
+ pic+=rect(x,96,140,95,i%2?'#e9edf9':'#dceefa')+
+ '<foreignObject x="'+(x+9)+'" y="112" width="123" height="60"><div xmlns="http://www.w3.org/1999/xhtml" style="font:bold 14px/1.4 Arial;color:#265371;text-align:center">'+esc(steps[i])+'</div></foreignObject>';
+ if(i<3)pic+=motion('M'+(x+141)+' 142 L'+(x+152)+' 142',1,'#2787b7');
+ }
+ pic+=text(20,251,'Cause → intermediate mechanism → physiological effect → clinical sign',14);
+ return [canvas(pic,'Step by step causal chain for selected electrolyte mechanism'),steps.join(' → ')+'. Work from the disturbance to the symptom rather than memorizing the symptom in isolation.'];
+}
+function render(box){
+ const mode=box.dataset.mode||'normal';let result;
+ if(box.id==='labCaThreshold')result=calcium(mode);
+ else if(box.id==='labMagnesiumNMJ'||box.id==='labMagnesiumHigh')result=magnesium(mode);
+ else if(box.id==='labPhosphateATP')result=phosphateEnergy(mode);
+ else if(box.id==='labPhosphateCalcium')result=phosphateCalcium(mode);
+ else if(box.id==='labAgeWater')result=aging(mode);
+ else if(box.id==='labSymptomsA'||box.id==='labSymptomsB')result=clinical(mode);
+ else if(box.id==='labMechanismReview')result=recap(mode);
+ if(!result)return;
+ box.querySelector('.labScene').innerHTML=result[0];
+ box.querySelector('.labReadout').textContent=result[1];
+}
+document.querySelectorAll('.physLab').forEach(box=>{
+ const buttons=[...box.querySelectorAll('[data-lab-mode]')];
+ if(!buttons.length)return;
+ const set=mode=>{box.dataset.mode=mode;buttons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.labMode===mode)));render(box)};
+ buttons.forEach(b=>b.addEventListener('click',()=>set(b.dataset.labMode)));
+ const replay=box.querySelector('[data-lab-replay]');if(replay)replay.addEventListener('click',()=>render(box));
+ set(buttons[0].dataset.labMode);
+});
+})();</script><script id="focus-soft-notes-script">(function(){const btn=document.getElementById('focusToggle'),key='ch24_focus_mode_v1';if(!btn)return;function set(v){document.body.classList.toggle('focusMode',v);btn.setAttribute('aria-pressed',String(v));btn.textContent=v?'☰ Show pages':'☰ Hide pages · Focus mode';try{localStorage.setItem(key,v?'1':'0')}catch(e){}}btn.addEventListener('click',()=>set(!document.body.classList.contains('focusMode')));let on=false;try{on=localStorage.getItem(key)==='1'}catch(e){}set(on)})();</script></body></html>
