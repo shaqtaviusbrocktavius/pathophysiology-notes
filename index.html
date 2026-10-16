@@ -156,7 +156,9 @@ html[data-theme="dark"]{--soft-yellow:rgba(255,221,106,.20);--soft-blue:rgba(103
 .notesDock.stickyMinimized .stickyNoteLaunch:hover,.notesDock.stickyMinimized .stickyNoteLaunch:focus-visible{transform:rotate(0deg) scale(1.08);box-shadow:0 9px 22px #0004;outline:2px solid #e5bd53;outline-offset:3px}
 .stickyNoteLaunch .stickyNotePin{position:absolute;top:-15px;left:22px;font-size:25px;filter:drop-shadow(0 2px 2px #0003);line-height:1}
 .stickyNoteLaunch .stickyNoteLines{font-weight:800;font-size:20px;letter-spacing:3px;line-height:1.1;opacity:.8;transform:translateY(3px)}
-@media(max-width:1150px){.notesDock.stickyMinimized{position:fixed!important;right:18px!important;bottom:18px!important;top:auto!important;left:auto!important;margin:0!important}}
+@media(max-width:1150px){.notesDock.stickyMinimized:not(.stickyIconDragged){position:fixed!important;right:18px!important;bottom:18px!important;top:auto!important;left:auto!important;margin:0!important}}
+.notesDock.stickyMinimized.stickyIconDragged{position:fixed!important;right:auto!important;bottom:auto!important;margin:0!important}
+.stickyNoteLaunch{touch-action:none;user-select:none}
 @media print{.stickyNoteLaunch{display:none!important}}
 </style><style id="compact-annotation-toolbar">
 #persistentHighlightBar{gap:6px!important;padding:8px 11px!important}
@@ -337,10 +339,63 @@ setupExactTargets();applyHighlights();qs.forEach(([question,answer,explanation],
    if(desktop()){const r=dock.getBoundingClientRect();try{localStorage.setItem(key,JSON.stringify({x:r.left,y:r.top}))}catch(err){}}
  }
  head.addEventListener('pointerup',end);head.addEventListener('pointercancel',end);
- window.addEventListener('resize',restore);
- // The notes panel height can change when shown or hidden; keep it in view.
- const observer=new ResizeObserver(()=>{if(desktop()&&dock.style.left){const r=dock.getBoundingClientRect();place(r.left,r.top)}});
+ // Save a separate minimized-icon position; no observers or layout feedback loops.
+ const icon=document.getElementById('stickyNoteLaunch');
+ const hide=document.getElementById('collapseNotes');
+ const iconKey='ch24_sticky_icon_position_v1';
+ let drag=null, ignoreClick=false;
+ function restoreIcon(){
+   if(!dock.classList.contains('stickyMinimized'))return;
+   let p=null;
+   try{p=JSON.parse(localStorage.getItem(iconKey))}catch(e){}
+   if(p&&Number.isFinite(p.x)&&Number.isFinite(p.y)){
+     dock.classList.add('stickyIconDragged');
+     place(p.x,p.y);
+   }else{
+     dock.classList.remove('stickyIconDragged');
+     dock.style.left='';dock.style.top='';dock.style.right='';dock.style.bottom='';
+   }
+ }
+ if(icon){
+   icon.addEventListener('pointerdown',e=>{
+     if(e.button!==0||!dock.classList.contains('stickyMinimized'))return;
+     const r=dock.getBoundingClientRect();
+     drag={id:e.pointerId,x:e.clientX,y:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,moved:false};
+     icon.setPointerCapture(e.pointerId);
+   });
+   icon.addEventListener('pointermove',e=>{
+     if(!drag||drag.id!==e.pointerId)return;
+     if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>5)drag.moved=true;
+     if(drag.moved){
+       dock.classList.add('stickyIconDragged');
+       place(e.clientX-drag.dx,e.clientY-drag.dy);
+     }
+   });
+   function finishDrag(e){
+     if(!drag||drag.id!==e.pointerId)return;
+     if(drag.moved){
+       ignoreClick=true;
+       const r=dock.getBoundingClientRect();
+       try{localStorage.setItem(iconKey,JSON.stringify({x:r.left,y:r.top}))}catch(err){}
+     }
+     drag=null;
+   }
+   icon.addEventListener('pointerup',finishDrag);
+   icon.addEventListener('pointercancel',finishDrag);
+   icon.addEventListener('click',e=>{
+     if(ignoreClick){ignoreClick=false;e.preventDefault();e.stopImmediatePropagation();return}
+     requestAnimationFrame(()=>{dock.classList.remove('stickyIconDragged');restore()});
+   },true);
+ }
+ if(hide)hide.addEventListener('click',()=>requestAnimationFrame(restoreIcon));
+ window.addEventListener('resize',()=>{if(dock.classList.contains('stickyMinimized'))restoreIcon();else restore()});
+ // Only adjust expanded-panel geometry when its size changes.
+ const observer=new ResizeObserver(()=>{
+   if(!dock.classList.contains('stickyMinimized')&&desktop()&&dock.style.left){
+     const r=dock.getBoundingClientRect();place(r.left,r.top);
+   }
+ });
  observer.observe(dock);
- restore();
+ if(dock.classList.contains('stickyMinimized'))restoreIcon();else restore();
 })();
 </script><script id="focus-soft-notes-script">(function(){const btn=document.getElementById('focusToggle'),key='ch24_focus_mode_v1';if(!btn)return;function set(v){document.body.classList.toggle('focusMode',v);btn.setAttribute('aria-pressed',String(v));btn.textContent=v?'☰ Show pages':'☰ Hide pages · Focus mode';try{localStorage.setItem(key,v?'1':'0')}catch(e){}}btn.addEventListener('click',()=>set(!document.body.classList.contains('focusMode')));let on=false;try{on=localStorage.getItem(key)==='1'}catch(e){}set(on)})();</script></body></html>
