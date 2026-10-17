@@ -929,6 +929,13 @@ document.getElementById('resetAnnotations').addEventListener('click',()=>{if(!co
 const qs=[];const qa=document.getElementById('quizArea');annotateSetup();
 // Register the explanatory diagram boxes without renumbering previous highlight IDs.
 document.querySelectorAll('#page-535 .ecv-step, #page-536 .ecv-step').forEach((el,i)=>{el.classList.add('annotTarget');el.dataset.annotId='ch24_flow_'+(el.closest('#page-535')?'535_':'536_')+i});
+// Page 540 figure redraw and absorption explanations use custom divs rather than paragraphs.
+// Register them AFTER the legacy numbered targets so existing saved highlight IDs do not change.
+document.querySelectorAll('#page-540 .fig249Text, #page-540 .fig249Pearl, #page-540 .fig249Body, #page-540 .fig249Mechanism, #page-540 .fig249Title, #page-540 .fig249Small').forEach((el,i)=>{
+ if(el.classList.contains('annotTarget'))return;
+ el.classList.add('annotTarget');
+ if(!el.dataset.annotId)el.dataset.annotId='ch24_p540_extra_'+i;
+});
 // Explicit stable IDs for figure explanations; existing annotation IDs stay unchanged.
 document.querySelectorAll('.page .ecv-extra-note').forEach((el,i)=>{el.classList.add('annotTarget');el.dataset.annotId='ch24_original_figure_note_'+(i===0?'244':'245')});
 setupExactTargets();applyHighlights();qs.forEach(([question,answer,explanation],i)=>{const d=document.createElement('div');d.className='quiz';const text=document.createElement('p');text.innerHTML=`<b>${i+1}.</b> ${question}`;d.appendChild(text);const fb=document.createElement('div');fb.className='feedback';for(const value of [true,false]){const b=document.createElement('button');b.type='button';b.textContent=value?'True':'False';b.style.marginRight='8px';b.onclick=()=>{fb.textContent=(value===answer?'✓ Correct. ':'✗ Not quite. ')+explanation;fb.className='feedback '+(value===answer?'ok':'wrong');};d.appendChild(b)}d.appendChild(fb);qa.appendChild(d)});if(ids.includes(location.hash.slice(1)))navigate(location.hash.slice(1));else navigate('531');
