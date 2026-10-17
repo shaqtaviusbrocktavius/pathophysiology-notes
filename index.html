@@ -993,28 +993,38 @@ function renderCells(sim,mode){
  txt(390,250,hypo?'Decreased cell volume':'Normal cell volume','phys-note')+'</svg>';
 }
 function renderEdema(mode){
- const params={
- normal:[2,2,'Normal filtration','Lymph returns excess fluid'],
- hydro:[5,2,'↑ Venous / capillary pressure','More outward filtration'],
- permeable:[5,2,'↑ Permeability + escaped proteins','Protein draws interstitial water'],
- lymph:[2,0,'Blocked lymphatic drainage','Fluid cannot clear'],
- albumin:[5,2,'↓ Plasma albumin','Less opposition to filtration']
+ const config={
+  normal:{name:'NORMAL FILTRATION',why:'Fluid enters tissue; lymph clears the excess',flux:2,pool:14,drain:true},
+  hydro:{name:'HIGH CAPILLARY PRESSURE',why:'More fluid pushed through capillary wall',flux:5,pool:63,drain:true},
+  permeable:{name:'LEAKY CAPILLARY',why:'Fluid and plasma proteins escape into tissue',flux:5,pool:67,drain:true},
+  lymph:{name:'LYMPH DRAINAGE BLOCKED',why:'Filtration continues, but lymph cannot drain fluid',flux:3,pool:67,drain:false},
+  albumin:{name:'LOW PLASMA ALBUMIN',why:'Reduced inward oncotic force favours filtration',flux:4,pool:57,drain:true}
  };
- const [inward,drain,label,detail]=params[mode]||params.normal;
- const fluxPaths=['M110 112 L110 198','M205 112 L205 198','M303 112 L303 198','M398 112 L398 198','M485 112 L485 198'];
- const lymph='M540 223 L540 150 L598 150';
- return svgHead+bg+txt(18,24,'CAPILLARY')+txt(20,257,'INTERSTITIUM')+
- '<rect x="17" y="40" width="505" height="96" rx="42" fill="#f7bdc0" stroke="#b34f5c" stroke-width="3"/>'+
- '<path d="M22 140 H515" stroke="#c78d9a" stroke-width="2" stroke-dasharray="10 7"/>'+
- '<rect x="525" y="144" width="80" height="15" rx="6" fill="#b1dcb9" stroke="#4f9069" stroke-width="2"/>'+
- txt(500,178,'LYMPH','phys-sub')+
- '<path d="M540 216 L540 160" stroke="#31965a" stroke-width="4" stroke-dasharray="6 4"/>'+
- '<circle cx="540" cy="207" r="6" fill="#3aa268" style="'+(drain?'offset-path:path(\'M540 216 L540 160\');animation:physWater '+(drain===2?'1.5s':'4s')+' linear infinite':'opacity:.25')+'"/>'+
- fluxPaths.slice(0,inward).map((p,i)=>dotPath(p,'#2585d0','move-water',i*.4)).join('')+
- '<path d="M32 224 Q235 '+(inward===5?167:206)+' 505 222" fill="none" stroke="#3994cb" stroke-width="'+(inward===5||drain===0?19:7)+'" opacity=".55" stroke-linecap="round"/>'+
- (mode==='permeable'?'<g fill="#aa4e54"><circle cx="135" cy="176" r="8"/><circle cx="295" cy="183" r="8"/><circle cx="449" cy="186" r="8"/></g>'+txt(118,240,'Protein escapes into interstitium','phys-sub'):'')+
- txt(34,71,label,'phys-value')+txt(34,92,detail,'phys-note')+
- txt(330,267,'Filtration '+(inward===5?'↑↑':'→')+'   Lymph '+(drain?'flows':'blocked'),'phys-sub')+'</svg>';
+ const c=config[mode]||config.normal;
+ const growing=c.pool>20;
+ const drop=(x,i)=>'<circle cx="'+x+'" cy="136" r="7" fill="#208bd5"><animate attributeName="cy" values="140;176;203" dur="'+(c.flux===5?'1.7':'2.7')+'s" begin="-'+(i*.44)+'s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="'+(c.flux===5?'1.7':'2.7')+'s" begin="-'+(i*.44)+'s" repeatCount="indefinite"/></circle>';
+ const droplets=[90,163,238,313,388].slice(0,c.flux).map(drop).join('');
+ const y=244-c.pool;
+ const pool='<rect x="20" y="'+y+'" width="453" height="'+c.pool+'" rx="12" fill="#64b9e8" opacity=".63">'+(growing?'<animate attributeName="y" values="236;'+y+';236" dur="8s" repeatCount="indefinite"/><animate attributeName="height" values="8;'+c.pool+';8" dur="8s" repeatCount="indefinite"/>':'')+'</rect>';
+ const lymphVessel='<path d="M489 234 L489 183 L554 183" stroke="#3a9167" stroke-width="16" fill="none" stroke-linecap="round"/>'+
+ '<path d="M489 234 L489 183 L554 183" stroke="#a8e4bf" stroke-width="10" fill="none" stroke-linecap="round"/>';
+ const lymphFlow=c.drain?'<circle r="5" fill="#24774e"><animateMotion path="M489 234 L489 183 L554 183" dur="2s" repeatCount="indefinite"/></circle>':'<circle cx="489" cy="184" r="18" fill="#fff1f1" stroke="#c74343" stroke-width="3"/><path d="M480 175 L498 193 M498 175 L480 193" stroke="#c74343" stroke-width="5"/>';
+ const proteins=mode==='permeable'?'<g fill="#a84759"><circle cx="129" cy="170" r="8"/><circle cx="285" cy="181" r="8"/><circle cx="390" cy="172" r="8"/></g>':'';
+ const albumin=mode==='albumin'?'<g fill="#fdf5e6" stroke="#c9a58c" stroke-width="2"><circle cx="107" cy="92" r="7"/></g>':
+ '<g fill="#fff5e6" stroke="#c9a58c" stroke-width="2"><circle cx="106" cy="92" r="7"/><circle cx="179" cy="104" r="7"/><circle cx="254" cy="91" r="7"/><circle cx="332" cy="105" r="7"/></g>';
+ const extra=growing?'EXCESS FLUID BUILDS UP IN TISSUE':'EXCESS FLUID DRAINS THROUGH LYMPH';
+ return svgHead+bg+
+ txt(18,22,'BLOOD CAPILLARY','phys-label')+
+ '<rect x="18" y="37" width="453" height="95" rx="41" fill="#f3b5b9" stroke="#b44e5c" stroke-width="3"/>'+
+ txt(34,61,c.name,'phys-value')+txt(34,80,c.why,'phys-note')+albumin+
+ '<path d="M27 138 H462" stroke="#b96e7a" stroke-width="2" stroke-dasharray="8 5"/>'+
+ txt(20,161,'OUTWARD FILTRATION ↓','phys-sub')+droplets+
+ pool+proteins+
+ lymphVessel+lymphFlow+
+ txt(479,162,'LYMPH','phys-sub')+
+ txt(22,272,extra,'phys-label')+
+ txt(461,272,c.drain?'Drainage functioning':'DRAINAGE STOPPED','phys-sub')+
+ '</svg>';
 }
 function renderBalance(mode){
  const intake=mode==='intake',dist=mode==='distribution',excr=mode==='excretion',loss=mode==='loss';
