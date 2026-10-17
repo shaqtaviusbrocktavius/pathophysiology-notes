@@ -1121,7 +1121,7 @@ function renderEdema(mode){
  '<animate attributeName="cy" values="141;172;209" dur="'+(c.drops>3?'1.7s':'2.5s')+'" begin="-'+(i*.35)+'s" repeatCount="indefinite"/>'+
  '<animate attributeName="opacity" values="0;1;0" dur="'+(c.drops>3?'1.7s':'2.5s')+'" begin="-'+(i*.35)+'s" repeatCount="indefinite"/></circle>').join('');
  const albuminDots=[95,169,242,316].slice(0,c.albumin).map(x=>'<circle cx="'+x+'" cy="113" r="7" fill="#fff3db" stroke="#a78466" stroke-width="2"/>').join('');
- const proteinLeak=c.protein?'<g fill="#b74e63"><circle cx="145" cy="167" r="7"/><circle cx="245" cy="184" r="7"/><circle cx="353" cy="173" r="7"/></g>'+txt(128,202,'Escaped proteins attract water','phys-sub'):'';
+ const proteinLeak=c.protein?'<g fill="#b74e63"><circle cx="145" cy="167" r="7"><animate attributeName="cy" values="121;165;175" dur="2.2s" repeatCount="indefinite"/></circle><circle cx="245" cy="184" r="7"/><circle cx="353" cy="173" r="7"/></g>'+txt(128,202,'Protein leak raises tissue oncotic pull','phys-sub'):'';
  const pool='<rect x="21" y="'+(246-c.fill)+'" width="446" height="'+c.fill+'" rx="10" fill="#57b1e8" opacity=".7">'+
  (accumulation?'<animate attributeName="y" from="237" to="'+(246-c.fill)+'" dur="5s" fill="freeze" begin="0s"/>'+
  '<animate attributeName="height" from="9" to="'+c.fill+'" dur="5s" fill="freeze" begin="0s"/>':'')+'</rect>';
@@ -1142,10 +1142,10 @@ function renderEdema(mode){
  waterDots+
  txt(20,163,'2. FILTRATION ↓','phys-label')+
  pool+proteinLeak+
- txt(25,275,accumulation?'3. EDEMA: INTERSTITIAL WATER BUILDS UP':'3. EXCESS WATER IS CLEARED','phys-label')+
+ txt(25,275,accumulation?'3. INTERSTITIAL FLUID ACCUMULATES':'3. LYMPH REMOVES EXCESS','phys-label')+
  pathway+running+
- txt(476,163,'LYMPH','phys-sub')+
- txt(476,264,c.drains?'Flow continues':'BLOCKED','phys-sub')+
+ txt(470,155,'LYMPHATIC','phys-sub')+
+ txt(470,264,c.drains?'Water drains →':'NO DRAINAGE','phys-sub')+
  '</svg>';
 }
 function renderBalance(mode){
