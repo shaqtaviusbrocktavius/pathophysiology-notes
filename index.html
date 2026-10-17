@@ -1277,22 +1277,28 @@ function calcium(mode){
 }
 function magnesium(mode){
  const count=mode==='low'?12:mode==='high'?2:6;
- let ach='';
- for(let i=0;i<count;i++){
-   let x=63+(i%8)*32;
-   ach+='<circle cx="'+x+'" cy="147" r="6" fill="#d99c3c"><animate attributeName="cy" values="140;199;140" dur="2.2s" repeatCount="indefinite" begin="-'+(i*.21).toFixed(2)+'s"/></circle>';
- }
+ // ACh is released in one direction; an individual molecule never bounces back to the nerve.
+ const vesicles=Array.from({length:10},(_,i)=>'<circle cx="'+(57+i*27)+'" cy="108" r="9" fill="#91b9d6" stroke="#4387ab" stroke-width="2"/>').join('');
+ const ach=Array.from({length:count},(_,i)=>{
+   const x=63+(i%8)*32,delay=-(i*.23).toFixed(2);
+   return '<circle cx="'+x+'" cy="140" r="6" fill="#d99c3c" opacity="0">'+
+    '<animate attributeName="cy" values="140;172;204;204" keyTimes="0;0.45;0.8;1" dur="2.4s" begin="'+delay+'s" repeatCount="indefinite"/>'+
+    '<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.13;0.78;1" dur="2.4s" begin="'+delay+'s" repeatCount="indefinite"/>'+
+    '</circle>';
+ }).join('');
  const pic=text(18,26,'MOTOR NEURON → ACh RELEASE → MUSCLE RESPONSE',16)+
- rect(30,47,326,87,'#b7d9ef')+text(43,71,'Presynaptic motor axon terminal',13)+
- Array.from({length:10},(_,i)=>'<circle cx="'+(57+i*27)+'" cy="108" r="9" fill="#91b9d6" stroke="#4387ab" stroke-width="2"/>').join('')+
- text(376,88,'Mg²⁺ normally limits',13)+text(376,107,'presynaptic ACh release',13)+
+ rect(30,47,326,87,'#b7d9ef')+text(43,71,'Presynaptic motor axon terminal',13)+vesicles+
+ text(376,88,'Mg²⁺ regulates',13)+text(376,107,'presynaptic ACh release',13)+
  text(40,174,'Synaptic cleft',13)+ach+
  line(30,219,355,219,'#587d95')+
  Array.from({length:7},(_,i)=>rect(55+i*43,224,15,19,'#67a7ca')).join('')+
- rect(31,251,325,18,'#e9b1b4')+text(374,190,mode==='low'?'ACh release HIGH':mode==='high'?'ACh release LOW':'Controlled ACh release',15)+
- text(374,224,mode==='low'?'Twitch / hyperreflexia':mode==='high'?'Weak reflexes / paralysis':'Normal end-plate response',13);
- return [canvas(pic,'Magnesium alters acetylcholine release at the neuromuscular junction'),
- mode==='low'?'Low Mg²⁺ means less inhibition of ACh release: more transmitter reaches the muscle end plate, increasing neuromuscular excitability.':mode==='high'?'High Mg²⁺ suppresses ACh release, weakening muscle activation, reflexes and potentially respiratory function.':'At normal Mg²⁺, release of ACh is appropriately restrained and skeletal muscle activation is regulated.'];
+ text(375,145,'ACh diffuses ↓',13)+text(375,164,'Binds muscle receptors',13)+
+ rect(31,251,325,18,'#e9b1b4')+
+ text(374,190,mode==='low'?'ACh release HIGH':mode==='high'?'ACh release LOW':'Controlled ACh release',15)+
+ text(374,224,mode==='low'?'Twitch / hyperreflexia':mode==='high'?'Weak reflexes / paralysis':'Normal end-plate response',13)+
+ text(27,282,'ACh → receptors → acetylcholinesterase breakdown',13);
+ return [canvas(pic,'One-way acetylcholine diffusion and clearance at the neuromuscular junction'),
+ mode==='low'?'Low Mg²⁺ reduces restraint on presynaptic ACh release: more ACh reaches the motor end plate, increasing neuromuscular excitability. Each released ACh molecule diffuses across the cleft and is broken down by acetylcholinesterase; it does not bounce back.':mode==='high'?'High Mg²⁺ suppresses presynaptic ACh release, so less ACh reaches receptors, leading to hyporeflexia, weakness and potentially respiratory depression.':'At normal Mg²⁺, regulated ACh release produces normal muscle activation. Released ACh binds receptors and is then degraded by acetylcholinesterase.'];
 }
 function phosphateEnergy(mode){
  const low=mode!=='normal',feed=mode==='refeed';
