@@ -399,7 +399,7 @@ html[data-theme="dark"] .fig249guide .fig249Small{color:#d2dfe9}
 <h3>Clinical dehydration: volume AND concentration</h3>
 <p>In this textbook, <b>clinical dehydration</b> describes the combination of <b>ECV deficit and hypernatremia</b>. There is insufficient extracellular fluid volume and not enough water relative to sodium. Gastrointestinal losses from vomiting or diarrhea, especially with inadequate water replacement, are common examples.</p>
 <div class="grid2"><div class="mini"><strong>ECV deficit</strong><p>Reduced vascular and interstitial fluid volume → tachycardia, postural hypotension, poor tissue perfusion, dry mucous membranes and potentially shock.</p></div><div class="mini"><strong>Hypernatremia</strong><p>Increased ECF osmolality → water leaves cells → cell shrinkage and neurologic symptoms. Infants and older adults are especially vulnerable when they cannot adequately replace fluid.</p></div></div>
-<h3>Interstitial fluid volume: edema</h3><div class="pathSim" id="edemaSim" data-mode="normal" role="group" aria-label="Edema — fluid accumulates outside capillaries"><h3>🎬 Interactive: Edema — fluid accumulates outside capillaries</h3><div class="phys-stage" data-mechanism="edemaSim" aria-label="Interactive visualization for edemaSim"></div><div class="simActions"><button type="button" data-sim-mode="hydro" aria-pressed="true">↑ Hydrostatic pressure</button><button type="button" data-sim-mode="permeable" aria-pressed="false">Leaky capillary</button><button type="button" data-sim-mode="lymph" aria-pressed="false">Blocked lymph</button><button type="button" data-sim-mode="albumin" aria-pressed="false">↓ Plasma albumin</button><button type="button" data-sim-replay>↻ Replay</button></div><div class="simExplanation" aria-live="polite">Increased capillary hydrostatic pressure drives more fluid into the interstitium.</div><div class="simLegend">Animated concept model, not a diagnostic measurement. Select a scenario or replay to compare.</div></div>
+<h3>Interstitial fluid volume: edema</h3><div class="pathSim" id="edemaSim" data-mode="normal" role="group" aria-label="Edema — fluid accumulates outside capillaries"><h3>🎬 Interactive: Edema — fluid accumulates outside capillaries</h3><div class="phys-stage" data-mechanism="edemaSim" aria-label="Interactive visualization for edemaSim"></div><div class="simActions"><button type="button" data-sim-mode="hydro" aria-pressed="true">↑ Hydrostatic pressure</button><button type="button" data-sim-mode="permeable" aria-pressed="false">Leaky capillary</button><button type="button" data-sim-mode="lymph" aria-pressed="false">Blocked lymph</button><button type="button" data-sim-mode="albumin" aria-pressed="false">↓ Plasma albumin</button><button type="button" data-sim-replay>↻ Replay</button></div><div class="simExplanation" aria-live="polite">Increased capillary hydrostatic pressure drives more fluid into the interstitium.</div><div class="simLegend">Animated concept model, not a diagnostic measurement. Select a scenario or replay to compare.</div><p><b>Animation key:</b> In the blocked-lymph view, fluid continues crossing the capillary wall while the red obstruction stops lymph flow. Watch the interstitial blue pool grow. With low albumin, the capillary retains fewer proteins; with increased permeability, proteins escape into tissue.</p></div>
 <p><b>Edema</b> is excessive accumulation of fluid in interstitial tissues. It may accompany generalized ECV excess, or it may occur because capillary forces or lymphatic drainage are abnormal. Visible edema does not necessarily mean effective circulating blood volume is adequate.</p>
 <table class="ch24-table"><tr><th>Mechanism</th><th>Why fluid accumulates</th><th>Example</th></tr>
 <tr><td>↑ Capillary hydrostatic pressure</td><td>More fluid is pushed outward across capillaries</td><td>Venous congestion, heart failure</td></tr>
@@ -1160,19 +1160,39 @@ function renderBalance(mode){
  txt(22,269,intake?'Food, IV fluids and absorption':dist?'Redistribution changes serum concentration':excr?'Total body amount decreases with excretion':'Extra losses can exceed replacement','phys-note')+'</svg>';
 }
 function renderPotassiumShift(mode){
- const into=mode==='insulin', out=mode==='acidosis', renal=mode==='aldosterone';
- const p=out?'M444 118 L230 118':into?'M229 118 L444 118':'M210 154 L135 225';
- return svgHead+bg+
- '<rect x="18" y="47" width="225" height="189" rx="16" fill="#fce9bd" stroke="#c08a30" stroke-width="3"/>'+
- '<rect x="360" y="47" width="240" height="189" rx="16" fill="#c8e7f5" stroke="#3980a4" stroke-width="3"/>'+
- txt(39,79,'ECF (plasma)')+txt(390,79,'ICF (cells)')+
- txt(34,120,'~ 3.5–5.0 mEq/L','phys-value')+txt(388,120,'K⁺ abundant','phys-value')+
- '<g fill="#c78624">'+[390,425,460,495,530].map((x,i)=>'<circle cx="'+x+'" cy="'+(160+i%2*30)+'" r="8"/>').join('')+'</g>'+
- '<g fill="#c78624"><circle cx="80" cy="170" r="8"/><circle cx="120" cy="155" r="8"/></g>'+
- '<path d="'+p+'" stroke="#cf8d2a" stroke-width="5" stroke-dasharray="8 6"/>'+
- dotPath(p,'#d28b29','move-ion',0)+dotPath(p,'#d28b29','move-ion',1)+
- txt(26,27,renal?'Aldosterone: excretion from body':out?'Shift K⁺ from cells into ECF':'Insulin: uptake of K⁺ into cells','phys-value')+
- txt(260,254,renal?'K⁺ removed via urine':out?'Plasma K⁺ ↑ without K⁺ gain':'Plasma K⁺ ↓ without K⁺ loss','phys-note')+'</svg>';
+ const into=mode==='insulin',out=mode==='acidosis',renal=mode==='aldosterone';
+ const heading=renal?'KIDNEY · DISTAL NEPHRON':into?'SKELETAL MUSCLE · INSULIN ACTION':'SKELETAL MUSCLE · CELLULAR K⁺ RELEASE';
+ const motion=(path,dur='2.2s')=>'<circle r="7" fill="#c77b1a"><animateMotion path="'+path+'" dur="'+dur+'" repeatCount="indefinite"/></circle>';
+ const arrow=(path,color)=>'<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-linecap="round" marker-end="url(#kArrow)"/>';
+ const defs='<defs><marker id="kArrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="none" stroke="#ac6a18" stroke-width="1.5"/></marker></defs>';
+ if(renal){
+ return svgHead+bg+defs+txt(18,25,heading,'phys-value')+
+ '<path d="M55 75 Q90 48 126 75 L162 111 L145 159 L91 169 L55 125Z" fill="#e7b6b9" stroke="#a84b5b" stroke-width="4"/>'+
+ txt(58,92,'KIDNEY','phys-label')+
+ '<rect x="213" y="58" width="177" height="165" rx="15" fill="#f5d6a9" stroke="#a26d37" stroke-width="3"/>'+
+ txt(222,83,'PRINCIPAL CELL','phys-label')+
+ '<rect x="420" y="58" width="170" height="165" rx="19" fill="#c5e6f2" stroke="#3388a8" stroke-width="3"/>'+
+ txt(433,83,'TUBULAR LUMEN','phys-label')+
+ txt(20,212,'BLOOD','phys-label')+txt(251,115,'Na⁺/K⁺ pump','phys-sub')+
+ arrow('M174 151 L258 151','#ac6a18')+arrow('M363 163 L458 163','#ac6a18')+
+ motion('M174 151 L258 151')+motion('M363 163 L458 163')+
+ txt(185,181,'K⁺ enters cell','phys-sub')+txt(417,192,'K⁺ secretion','phys-sub')+
+ '<path d="M468 230 L541 230" stroke="#287f9b" stroke-width="3" marker-end="url(#kArrow)"/>'+
+ txt(420,255,'URINE → K⁺ LOST','phys-value')+
+ txt(17,277,'Aldosterone: ↑ ENaC, ↑ Na⁺/K⁺-ATPase, ↑ urinary K⁺ excretion','phys-note')+'</svg>';
+ }
+ return svgHead+bg+defs+txt(20,26,heading,'phys-value')+
+ '<rect x="15" y="52" width="188" height="165" rx="16" fill="#d2eafa" stroke="#81b8d5" stroke-width="2"/>'+
+ txt(25,78,'EXTRACELLULAR','phys-label')+txt(25,97,'PLASMA / ECF','phys-label')+
+ '<path d="M268 52 Q294 36 322 52 L578 52 Q605 125 578 217 L322 217 Q294 234 268 217 Z" fill="#f3ccb9" stroke="#b66657" stroke-width="6"/>'+
+ txt(331,85,'SKELETAL MUSCLE CELL','phys-label')+txt(358,106,'intracellular K⁺ HIGH','phys-sub')+
+ [345,383,421,459,497,535].map((x,i)=>'<circle cx="'+x+'" cy="'+(134+(i%2)*43)+'" r="7" fill="#d2982c"/>').join('')+
+ '<rect x="248" y="120" width="65" height="38" rx="10" fill="#f8e0aa" stroke="#ac6a18" stroke-width="3"/>'+
+ txt(251,115,'Na⁺/K⁺','phys-sub')+txt(258,144,'ATPase','phys-sub')+
+ (into?arrow('M154 179 L357 179','#ac6a18')+motion('M154 179 L357 179'):arrow('M362 191 L153 191','#ac6a18')+motion('M362 191 L153 191'))+
+ txt(21,236,into?'INSULIN → stimulates Na⁺/K⁺-ATPase':'CELL INJURY / CERTAIN ACIDOSES → K⁺ efflux','phys-value')+
+ txt(21,258,into?'K⁺ enters muscle → plasma K⁺ decreases':'K⁺ leaves damaged/affected cells → plasma K⁺ increases','phys-note')+
+ txt(21,277,'Redistribution: total-body K⁺ need not change','phys-note')+'</svg>';
 }
 function renderMembrane(mode,calcium){
  const ca=calcium;
