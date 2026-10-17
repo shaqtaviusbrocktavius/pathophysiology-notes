@@ -859,7 +859,23 @@ for(let i=spans.length-1;i>=0;i--){const [node,from,to]=spans[i];const range=doc
 function applyExactHighlights(){document.querySelectorAll('.annotTarget').forEach(el=>{const id=el.dataset.annotId;const saved=exactState[id]||[];if(!saved.length)return;const base=originalMarkup.get(id);if(base===undefined)return;el.innerHTML=base;for(const item of saved.slice().sort((a,b)=>a.start-b.start))paintInterval(el,item.start,item.end,item.color)})}
 const highlightMenu=document.getElementById('highlightMenu');let pendingSelection=null;
 function closeHighlightMenu(){highlightMenu.classList.remove('visible');pendingSelection=null}
-function captureSelection(){const sel=window.getSelection();if(!sel||sel.isCollapsed||!sel.toString().trim()){closeHighlightMenu();return}const range=sel.getRangeAt(0);const startEl=(range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement).closest('.annotTarget');const endEl=(range.endContainer.nodeType===1?range.endContainer:range.endContainer.parentElement).closest('.annotTarget');if(!startEl||startEl!==endEl||!startEl.closest('.page.active')){closeHighlightMenu();return}const pre=document.createRange();pre.selectNodeContents(startEl);pre.setEnd(range.startContainer,range.startOffset);const start=pre.toString().length;const end=start+range.toString().length;pendingSelection={id:startEl.dataset.annotId,start,end};
+function captureSelection(){const sel=window.getSelection();if(!sel||sel.isCollapsed||!sel.toString().trim()){closeHighlightMenu();return}const range=sel.getRangeAt(0);const startEl=(range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement).closest('.annotTarget');const endEl=(range.endContainer.nodeType===1?range.endContainer:range.endContainer.parentElement).closest('.annotTarget');if(startEl&&endEl&&startEl!==endEl){
+ const table=startEl.closest('#page-539 table.ch24-table');
+ if(table&&table===endEl.closest('#page-539 table.ch24-table')&&table.closest('.page.active')){
+  const segments=[];
+  table.querySelectorAll('th.annotTarget,td.annotTarget').forEach(cell=>{
+   if(!range.intersectsNode(cell))return;
+   const slice=document.createRange();slice.selectNodeContents(cell);
+   if(cell.contains(range.startContainer))slice.setStart(range.startContainer,range.startOffset);
+   if(cell.contains(range.endContainer))slice.setEnd(range.endContainer,range.endOffset);
+   const before=document.createRange();before.selectNodeContents(cell);before.setEnd(slice.startContainer,slice.startOffset);
+   const start=before.toString().length,end=start+slice.toString().length;
+   if(end>start)segments.push({id:cell.dataset.annotId,start,end});
+  });
+  if(segments.length){pendingSelection=segments;return}
+ }
+}
+if(!startEl||startEl!==endEl||!startEl.closest('.page.active')){closeHighlightMenu();return}const pre=document.createRange();pre.selectNodeContents(startEl);pre.setEnd(range.startContainer,range.startOffset);const start=pre.toString().length;const end=start+range.toString().length;pendingSelection={id:startEl.dataset.annotId,start,end};
  // Selection remains available to the always-visible top formatting toolbar.
 }
 document.addEventListener('mouseup',e=>{if(!e.target.closest('#highlightMenu'))captureSelection()});document.addEventListener('keyup',e=>{if(e.key==='Escape')closeHighlightMenu();else if(e.shiftKey||e.key==='ArrowLeft'||e.key==='ArrowRight')captureSelection()});
@@ -887,7 +903,7 @@ document.querySelectorAll('.quickHl').forEach(button=>{
  });
 });
 
-highlightMenu.querySelectorAll('[data-hl]').forEach(b=>b.addEventListener('click',()=>{if(!pendingSelection)return;const {id,start,end}=pendingSelection;const color=b.dataset.hl;const items=exactState[id]||[];const isTextStyle=color==='underline'||color==='italic';const isSameStyleAlready=isTextStyle&&items.some(h=>h.color===color&&h.start===start&&h.end===end);exactState[id]=items.filter(h=>{if(h.end<=start||h.start>=end)return true;if(isTextStyle)return h.color!==color;return h.color==='underline'||h.color==='italic'||h.color==='bold';});if(color!=='remove'&&!isSameStyleAlready)exactState[id].push({start,end,color});localStorage.setItem(STORAGE_EXACT,JSON.stringify(exactState));const el=document.querySelector('[data-annot-id="'+id+'"]');if(el){el.innerHTML=originalMarkup.get(id);for(const h of exactState[id].slice().sort((a,b)=>a.start-b.start))paintInterval(el,h.start,h.end,h.color)}flashSaved();window.getSelection()?.removeAllRanges();closeHighlightMenu()}));
+highlightMenu.querySelectorAll('[data-hl]').forEach(b=>b.addEventListener('click',()=>{if(!pendingSelection)return;const color=b.dataset.hl;const segments=Array.isArray(pendingSelection)?pendingSelection:[pendingSelection];for(const {id,start,end} of segments){const items=exactState[id]||[];const isTextStyle=color==='underline'||color==='italic';const isSameStyleAlready=isTextStyle&&items.some(h=>h.color===color&&h.start===start&&h.end===end);exactState[id]=items.filter(h=>{if(h.end<=start||h.start>=end)return true;if(isTextStyle)return h.color!==color;return h.color==='underline'||h.color==='italic'||h.color==='bold';});if(color!=='remove'&&!isSameStyleAlready)exactState[id].push({start,end,color});const el=document.querySelector('[data-annot-id="'+id+'"]');if(el){el.innerHTML=originalMarkup.get(id);for(const h of exactState[id].slice().sort((a,b)=>a.start-b.start))paintInterval(el,h.start,h.end,h.color)}}localStorage.setItem(STORAGE_EXACT,JSON.stringify(exactState));flashSaved();window.getSelection()?.removeAllRanges();closeHighlightMenu()}));
 function escapeHtml(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function cleanRichHtml(html){const doc=new DOMParser().parseFromString(String(html),'text/html');const allowed=new Set(['B','STRONG','I','EM','U','BR','DIV','P','UL','OL','LI','SPAN']);function scrub(node){for(const child of Array.from(node.childNodes)){if(child.nodeType===8){child.remove();continue}if(child.nodeType!==1)continue;if(!allowed.has(child.tagName)){const replacement=doc.createTextNode(child.textContent||'');child.replaceWith(replacement);continue}for(const attr of Array.from(child.attributes)){if(!(child.tagName==='SPAN'&&attr.name==='data-note-hl'&&['yellow','blue','pink','green','orange','soft-yellow','soft-blue','soft-pink','soft-green','soft-orange'].includes(attr.value)))child.removeAttribute(attr.name)}scrub(child)}}scrub(doc.body);return doc.body.innerHTML}
 const notesEditor=document.getElementById('pageNotes');
