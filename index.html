@@ -1575,28 +1575,41 @@ render();
 })();</script><button type="button" id="studyTutorLaunch" title="Ask the notebook tutor" aria-label="Open study tutor" aria-expanded="false">✦</button>
 <section id="studyTutorPanel" aria-label="Notebook study tutor" role="dialog" aria-modal="false">
 <header><strong>✦ Study Tutor</strong><button id="studyTutorClose" type="button">✕</button></header>
-<div id="studyTutorPrefs"><strong id="studyTutorMode">Notes search · works now</strong><details><summary>Optional AI connection</summary><p>A free-tier AI provider requires a securely hosted proxy. Do not paste API keys here. Enter only an HTTPS proxy endpoint you control.</p><input id="studyTutorEndpoint" type="url" placeholder="https://your-secure-proxy.example/chat" autocomplete="off"/><p>Without a proxy, answers are excerpts of matching notebook notes, not generated AI responses. Endpoint is stored only in this browser.</p></details></div>
-<div id="studyTutorMessages" role="log" aria-live="polite"><div class="studyTutorBubble">Ask about the page you are reading or any topic in Chapters 24–25. I can find relevant passages immediately. For conversational AI, configure the optional secure endpoint.</div></div>
+<div id="studyTutorPrefs"><strong id="studyTutorMode">AI Study Tutor · free allowance</strong><p>Powered by Puter AI. You may be asked to sign in to a free Puter account. Your monthly free allowance is limited; additional usage may require payment to Puter. Questions and relevant notebook text are sent to Puter and its AI provider. No API key needed.</p><details><summary>Options / notes-only fallback</summary><label><input id="studyTutorNotesOnly" type="checkbox"> Use notes search only (no AI request)</label><p>Uncheck to return to conversational answers. Existing private highlights and annotations are not sent.</p></details></div>
+<div id="studyTutorMessages" role="log" aria-live="polite"><div class="studyTutorBubble">Ask me about Chapters 24–25. I’ll explain mechanisms using relevant notebook passages. The first AI question may open a Puter sign-in prompt; you can switch to notes-only mode anytime.</div></div>
 <form id="studyTutorForm"><input id="studyTutorInput" placeholder="Why does hypocalcemia cause tetany?" aria-label="Ask a question" maxlength="700" required/><button type="submit">Ask</button></form>
-</section><script id="study-tutor-script">(function(){
+</section><script src="https://js.puter.com/v2/" defer></script>
+<script id="study-tutor-script">(function(){
 'use strict';
-const launch=document.getElementById('studyTutorLaunch'),panel=document.getElementById('studyTutorPanel'),close=document.getElementById('studyTutorClose'),form=document.getElementById('studyTutorForm'),input=document.getElementById('studyTutorInput'),messages=document.getElementById('studyTutorMessages'),endpoint=document.getElementById('studyTutorEndpoint'),mode=document.getElementById('studyTutorMode');
-const endpointKey='study_tutor_endpoint_v1';try{endpoint.value=localStorage.getItem(endpointKey)||''}catch(e){}
+const launch=document.getElementById('studyTutorLaunch'),panel=document.getElementById('studyTutorPanel'),close=document.getElementById('studyTutorClose'),form=document.getElementById('studyTutorForm'),input=document.getElementById('studyTutorInput'),messages=document.getElementById('studyTutorMessages'),mode=document.getElementById('studyTutorMode'),notesOnly=document.getElementById('studyTutorNotesOnly');
+let busy=false, history=[];
 function toggle(on){panel.classList.toggle('open',on);launch.setAttribute('aria-expanded',String(on));if(on)input.focus()}
 launch.addEventListener('click',()=>toggle(!panel.classList.contains('open')));close.addEventListener('click',()=>toggle(false));
-endpoint.addEventListener('change',()=>{let v=endpoint.value.trim();if(v&&!/^https:\/\//i.test(v)){endpoint.value='';v='';add('Only HTTPS endpoints are allowed. Never put a secret API key here.');}try{localStorage.setItem(endpointKey,v)}catch(e){}mode.textContent=v?'AI proxy configured · unverified':'Notes search · works now'});
-if(endpoint.value.trim())mode.textContent='AI proxy configured · unverified';
-function add(txt,you=false){const d=document.createElement('div');d.className='studyTutorBubble'+(you?' you':'');d.textContent=txt;messages.appendChild(d);messages.scrollTop=messages.scrollHeight}
+function add(txt,you=false){const d=document.createElement('div');d.className='studyTutorBubble'+(you?' you':'');d.textContent=txt;messages.appendChild(d);messages.scrollTop=messages.scrollHeight;return d}
+notesOnly.addEventListener('change',()=>{mode.textContent=notesOnly.checked?'Notes search · no AI request':'AI Study Tutor · free allowance'});
 const ignore=new Set('why what when where who how does did and the are for have from with that this into through about explain please could would can which page notes of in on a an is it to me tell give does happen versus between difference by its as be more'.split(' '));
-function terms(q){return [...new Set((q.toLowerCase().match(/[\p{L}\p{N}²⁻⁺]{3,}/gu)||[]).filter(w=>!ignore.has(w)))].slice(0,14)}
-function search(q){const words=terms(q);if(!words.length)return 'Try a more specific question, for example: Why does low calcium cause tetany?';
-const active=document.querySelector('.page.active'),pages=[...document.querySelectorAll('.page')].filter(p=>p.id!=='page-quiz');
-const ranked=[];for(const pg of pages){const candidates=[...pg.querySelectorAll('p,li,td,.mini,.ch24-clinical')].filter(el=>!el.querySelector('p,li,td'));for(const el of candidates){const text=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();if(text.length<35||text.length>1500)continue;const lower=text.toLowerCase();let score=0;for(const w of words){if(lower.includes(w))score+=w.length>=7?3:2}if(score)ranked.push({score:score+(active===pg?3:0),text,page:pg.id.slice(5)})}}
-ranked.sort((a,b)=>b.score-a.score);const shown=[];for(const x of ranked){if(shown.some(y=>y.text===x.text))continue;shown.push(x);if(shown.length===3)break}
-if(!shown.length)return 'I could not find a close match in the published notes. Try another term or page number. This offline mode does not invent an answer.';
-return 'Relevant notebook passages (not AI-generated):\n\n'+shown.map(x=>'Page '+x.page+': '+x.text.slice(0,640)).join('\n\n')+'\n\nFor an explained answer, connect a secure AI endpoint under Optional AI connection.'}
-form.addEventListener('submit',async e=>{e.preventDefault();const q=input.value.trim();if(!q)return;add(q,true);input.value='';const url=endpoint.value.trim();if(!url){add(search(q));return}
-const page=document.querySelector('.page.active');const context=(page?.innerText||page?.textContent||'').slice(0,11000);add('Contacting the configured AI endpoint…');const loading=messages.lastElementChild;try{
- const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,page:page?.id||'',context,instructions:'Answer as a medical study tutor using the supplied notebook notes; distinguish unavailable information and avoid inventing textbook claims.'})});if(!response.ok)throw Error('HTTP '+response.status);const json=await response.json();loading.textContent=typeof json.answer==='string'?json.answer:'The endpoint did not provide an answer field.';
-}catch(err){loading.textContent='AI endpoint unavailable ('+err.message+').\n\n'+search(q)}});
+function terms(q){return [...new Set((q.toLowerCase().match(/[\p{L}\p{N}²⁻⁺]{3,}/gu)||[]).filter(w=>!ignore.has(w)))].slice(0,12)}
+function matches(q){const words=terms(q),current=document.querySelector('.page.active'),pages=[...document.querySelectorAll('.page')].filter(p=>p.id!=='page-quiz');const hits=[];
+for(const page of pages){for(const el of page.querySelectorAll('p,li,td,.mini,.ch24-clinical')){if(el.querySelector('p,li,td'))continue;const t=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();if(t.length<45||t.length>1500)continue;const low=t.toLowerCase();let score=0;for(const w of words)if(low.includes(w))score+=w.length>6?3:2;if(score)hits.push({score:score+(page===current?2:0),text:t,page:page.id.slice(5)})}}
+hits.sort((a,b)=>b.score-a.score);const unique=[];for(const h of hits)if(!unique.some(x=>x.text===h.text)){unique.push(h);if(unique.length>=5)break}return unique}
+function search(q){const items=matches(q);return items.length?'Matching notebook passages:\n\n'+items.slice(0,3).map(h=>'Page '+h.page+': '+h.text.slice(0,650)).join('\n\n'):'No closely matching passage was found in the published notes. Try a different term.'}
+form.addEventListener('submit',async e=>{
+ e.preventDefault();const q=input.value.trim();if(!q||busy)return;add(q,true);input.value='';
+ if(notesOnly.checked){add(search(q));return}
+ const puterApi=window.puter;if(!puterApi||!puterApi.ai||typeof puterApi.ai.chat!=='function'){add('AI service could not load. Check the connection or browser content blockers.\n\n'+search(q));return}
+ busy=true;const submit=form.querySelector('button[type="submit"]'),btn=form.querySelector('button');btn.disabled=true;
+ const waiting=add('Generating an explanation…');
+ try{
+ const current=document.querySelector('.page.active');
+ const currentText=current?(current.innerText||current.textContent||'').slice(0,7000):'';
+ const passages=matches(q).slice(0,4).map(x=>'[Page '+x.page+'] '+x.text.slice(0,900)).join('\n\n');
+ const instruction='You are a helpful second-year medical student pathophysiology tutor. Use the provided notes from Banasik-based chapters 24 and 25 as context. Explain physiology accurately and clearly, step by step, including why symptoms occur. Preserve important clinical details and normal ranges. Distinguish what is in the supplied notes from general medical background; never claim to quote or view textbook pages beyond context. If unclear ask a question. When a mechanism is complex use simple analogies and one high-yield MCQ takeaway. Do not use private user annotations.';
+ const messagesForAI=[{role:'system',content:instruction+'\n\nCURRENT PAGE '+(current?.id||'')+':\n'+currentText+'\n\nRELATED NOTE EXCERPTS:\n'+passages},...history.slice(-8),{role:'user',content:q}];
+ const res=await puterApi.ai.chat(messagesForAI,{model:'gpt-5.4-nano',normalize:true});
+ let result=res?.message?.content;if(Array.isArray(result))result=result.map(x=>x.text||'').join('\n');if(typeof result!=='string')result=typeof res==='string'?res:String(res?.text||'');
+ if(!result.trim())throw Error('The AI returned no answer');
+ waiting.textContent=result;history.push({role:'user',content:q},{role:'assistant',content:result});history=history.slice(-10);
+ }catch(err){waiting.textContent='AI unavailable: '+(err?.message||'Please retry')+'.\n\nNotes-search fallback:\n'+search(q)}
+ finally{busy=false;btn.disabled=false;messages.scrollTop=messages.scrollHeight}
+});
 })();</script></body></html>
